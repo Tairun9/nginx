@@ -1,0 +1,12 @@
+---
+
+-
+
+  name: Install Nginx on Ubuntu & CentOS
+  hosts: linux
+  become: yes
+  roles:
+    - nginx
+
+
+...

@@ -1,0 +1,7 @@
+---
+- 
+  name: Check HTTP
+  uri:
+    url: http://{{ansible_facts.default_ipv4.address}}
+    status_code: 200
+...

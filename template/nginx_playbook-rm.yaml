@@ -1,0 +1,84 @@
+---
+# The minus in YAML this indicates a list item.  The playbook contains a list
+# of plays, with each play being a dictionary
+-
+
+  name: Remove Nginx weberver on Ubuntu and CentOS systems
+  hosts: linux
+  become: yes
+  # Hosts: where our play will run and options it will run with
+
+  # Vars: variables that will apply to the play, on all target systems
+  vars_files:
+    - vars/logos.yaml
+
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+
+    - name: Disable EPEL
+      yum:
+        name: epel-release
+        state: absent
+        update_cache: yes
+        #description: EPEL YUM Repo
+        #baseurl: https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+      when: ansible_facts.distribution == "CentOS"
+      notify: EPEL-Release disabled on CentOS
+  # Handlers: the list of handlers that are executed as a notify key from a task
+
+    - name: Remove Nginx Centos
+      package:
+        name: nginx
+        state: absent
+      notify: Nginx removed CentOS
+
+
+    - name: Configure HTML page with template
+      file:
+        dest: "{{ nginx_root_location }}/index.html"
+        state: absent
+
+    - name: Remove Nginx Ubuntu 
+    ## why is that actually needed? Because the above task does not remove Nginx on the Ubuntu servers, the package remains present and even the nginx service stays active,
+    ## this has been already tested
+      apt:
+        name: nginx
+        state: absent
+      when: ansible_facts.distribution == "Ubuntu"
+      notify: Nginx removed on Ubuntu
+
+    # - name: Configure HTML page with template
+    #   template:
+    #     src: templates/index.html-logos.j2
+    #     dest: "{{ nginx_root_location }}/index.html"
+    #     mode: 0644
+
+    - name: Stop Nginx service
+      service:
+        name: nginx
+        state: stopped
+      when: ansible_facts.distribution == "Ubuntu"
+      notify: Check Nginx HTTP service
+
+  handlers:
+
+    - name: EPEL-Release disabled on CentOS
+      debug:
+        msg: EPEL-Release Repo disabled on CentOS host {{ ansible_facts.hostname }} with IPv4 {{ ansible_facts.eth0.ipv4.address }}
+
+    - name: Nginx removed CentOS
+      debug:
+        msg: Nginx package removed on host {{ ansible_facts.hostname }} with IPv4 {{ ansible_facts.default_ipv4.address }}
+
+    - name: Nginx removed on Ubuntu
+      debug:
+        msg: Nginx package removed on Ubuntu host {{ ansible_facts.hostname }} with IPv4 {{ ansible_facts.default_ipv4.address }}
+
+    - name: Check Nginx HTTP service
+      uri:
+        url: http://{{ ansible_facts.default_ipv4.address }}
+        status_code: -1
+# Three dots indicate the end of a YAML document
+...
